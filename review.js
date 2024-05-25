@@ -1,20 +1,30 @@
-const { number } = require("joi");
-const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
+const express = require("express");
+const router = express.Router({mergeParams : true});
+const wrapAsync = require("../utils/wrapAsync.js");
+const expressError = require("../utils/expressError.js");
+const { listingSchema , reviewSchema} = require("../schema.js");
+const Review = require("../models/review.js");
+const Listing = require("../models/listing.js");
 
-const reviewSchema = new Schema({
-    comment : String,
+const reviewController = require("../controller/reviews.js")
 
-    rating : {
-        type : Number,
-        min : 1,
-        max : 5
-    },
 
-    createdAt : {
-        type : Date,
-        default : Date.now
-    }
-});
+const validateReview = (req , res, next) => {
+    let {error} = reviewSchema.validate(req.body);
+        if(error){
+            let errMsg = error.details.map((el) => el.message).join(",");
+            throw new expressError(400, errMsg);
+        } else{
+            next();
+        }
+};
 
-module.exports = mongoose.model("Review" , reviewSchema);
+
+//Post review route
+router.post("/" , validateReview , wrapAsync(reviewController.createReview));
+
+//Delete review Route
+
+router.delete("/:reviewId" , wrapAsync(reviewController.deleteORdestroyReview));
+
+module.exports = router;
